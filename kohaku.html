@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>途中経過ボード</title>
+
+<style>
+:root {
+  --red: #b00000;
+  --gold: #ffd700;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, "Hiragino Sans", sans-serif;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--red) 0px,
+    var(--red) 90px,
+    #e6e6e6 90px,
+    #e6e6e6 180px
+  );
+  text-align: center;
+}
+
+/* 擬似縁取り */
+.outline {
+  text-shadow:
+    2px 0 #000,
+   -2px 0 #000,
+    0 2px #000,
+    0 -2px #000;
+}
+
+.title {
+  font-size: clamp(44px, 6.5vw, 72px);
+  font-weight: 900;
+  color: #fff;
+  margin: 12px 0;
+}
+
+.sections {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px;
+  padding: 0 10px;
+}
+
+.section {
+  background: rgba(30,30,30,0.75); /* ← 黒すぎない */
+  border-radius: 18px;
+  padding: 16px 18px;
+  width: 100%;
+  max-width: 380px;
+}
+
+.section h2 {
+  font-size: clamp(32px, 5vw, 44px);
+  font-weight: 900;
+  margin: 0 0 10px 0;
+  color: #fff;
+}
+
+/* ★ レイアウト修正点 */
+.row {
+  display: grid;
+  grid-template-columns: 2.5em 1fr;
+  align-items: center;
+  font-size: clamp(26px, 4.5vw, 36px);
+  margin: 8px 0;
+}
+
+.team-red {
+  color: var(--red);
+  font-weight: 900;
+}
+
+.team-white {
+  color: #fff;
+  font-weight: 900;
+}
+
+.score-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.score {
+  font-variant-numeric: tabular-nums;
+  min-width: 6ch;
+  text-align: right;
+  color: #fff;
+}
+
+.lead {
+  font-size: clamp(18px, 3.5vw, 24px);
+  color: var(--gold);
+  font-weight: 900;
+}
+
+.status {
+  margin-top: 16px;
+  font-size: clamp(30px, 5vw, 44px);
+  font-weight: 900;
+  color: var(--gold);
+}
+
+.last-update {
+  margin: 6px 0 12px;
+  font-size: clamp(16px, 3vw, 22px);
+  font-weight: 700;
+  color: #fff;
+}
+</style>
+</head>
+
+<body>
+
+<div class="title outline">途中経過</div>
+
+<div class="sections">
+
+  <div class="section">
+    <h2>特異点</h2>
+    <div class="row">
+      <div class="team-red">紅</div>
+      <div class="score-wrap">
+        <div id="red-tokuiten" class="score"></div>
+        <div id="lead-red-tokuiten" class="lead"></div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="team-white">白</div>
+      <div class="score-wrap">
+        <div id="white-tokuiten" class="score"></div>
+        <div id="lead-white-tokuiten" class="lead"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>燿詠</h2>
+    <div class="row">
+      <div class="team-red">紅</div>
+      <div class="score-wrap">
+        <div id="red-youei" class="score"></div>
+        <div id="lead-red-youei" class="lead"></div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="team-white">白</div>
+      <div class="score-wrap">
+        <div id="white-youei" class="score"></div>
+        <div id="lead-white-youei" class="lead"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>蒼霊</h2>
+    <div class="row">
+      <div class="team-red">紅</div>
+      <div class="score-wrap">
+        <div id="red-sourei" class="score"></div>
+        <div id="lead-red-sourei" class="lead"></div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="team-white">白</div>
+      <div class="score-wrap">
+        <div id="white-sourei" class="score"></div>
+        <div id="lead-white-sourei" class="lead"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="status outline" id="statusText"></div>
+<div class="last-update outline" id="lastUpdate"></div>
+
+<script>
+const API_URL =
+"https://script.google.com/macros/s/AKfycbz0n5Kz_IqUgprteJVOLbn-twO3HLHKH_DFY0WbUNRpJ7FS3XQ7EXafvZ3AiRVe1tWDQw/exec";
+
+function setSection(key, red, white) {
+  document.getElementById(`red-${key}`).textContent   = `${red}pt`;
+  document.getElementById(`white-${key}`).textContent = `${white}pt`;
+
+  document.getElementById(`lead-red-${key}`).textContent = "";
+  document.getElementById(`lead-white-${key}`).textContent = "";
+
+  if (red > white) {
+    document.getElementById(`lead-red-${key}`).textContent = "リード中";
+  } else if (white > red) {
+    document.getElementById(`lead-white-${key}`).textContent = "リード中";
+  }
+}
+
+async function update() {
+  const res = await fetch(API_URL);
+  const data = await res.json();
+
+  setSection("tokuiten", data.teams.red.特異点, data.teams.white.特異点);
+  setSection("youei",   data.teams.red.燿詠,   data.teams.white.燿詠);
+  setSection("sourei",  data.teams.red.蒼霊,   data.teams.white.蒼霊);
+
+  document.getElementById("statusText").textContent =
+    `現在リード中：${data.result}`;
+
+  const d = new Date(data.updatedAt);
+  document.getElementById("lastUpdate").textContent =
+    `最終更新：${d.toLocaleString("ja-JP")}`;
+}
+
+setInterval(update, 3000);
+update();
+</script>
+
+</body>
+</html>
